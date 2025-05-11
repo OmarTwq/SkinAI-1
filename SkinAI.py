@@ -4,6 +4,10 @@ import tensorflow as tf
 import cv2
 from PIL import Image
 import keras
+import gdown
+import os 
+import tempfile
+
 
 
 # Setup
@@ -12,16 +16,48 @@ st.set_page_config(page_title="SkinAI", layout="wide")
 class_names = ["chickenpox", "hfmd", "measles", "unknown"]
 
 # Load model once
-@st.cache(allow_output_mutation=True)
-def load_model():
-    return keras.models.load_model("VGG19-96.keras")
+# @st.cache(allow_output_mutation=True)
+# def load_model():
+#     return keras.models.load_model("VGG19-96.keras")
 
-model = load_model()
+# model = load_model()
+
+# load model from google drive
+file_id = "1pRUGLcLattWs4MI2U9YFq8ltbbSF7p1_"
+tmp_model_path = None  # Initialize tmp_model_path outside the try block
+
+try:
+    # Create a temporary file path
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".keras") as tmp_file:
+        tmp_model_path = tmp_file.name
+        print(f"Temporary model file will be saved to: {tmp_model_path}")
+
+    # Download the model from Google Drive using gdown
+    print(f"Downloading model from Google Drive ID: {file_id} to c:/Users/emanm/OneDrive/Desktop/python/New folder/task2")
+    gdown.download(f"https://drive.google.com/uc?id={file_id}", tmp_model_path, quiet=False)
+    print("Download complete.")
+
+    # Load the model
+    print(f"Loading model from: {tmp_model_path}")
+    model = keras.models.load_model(tmp_model_path)
+    print("Model loaded successfully!")
+    st.success("VGG19 model loaded successfully!")
+
+except Exception as e:
+    st.error(f"An error occurred: {e}")
+finally:
+    # Clean up the temporary file
+    try:
+        os.remove(tmp_model_path)
+        print(f"Temporary file {tmp_model_path} removed.")
+    except OSError as e:
+        print(f"Error removing temporary file {tmp_model_path}: {e}")
+
 
 css = f"""
     <style>
     .stApp {{
-        background-image: url("https://as2.ftcdn.net/jpg/01/17/12/37/1000_F_117123796_MBKR6xeMfrBdfhSWNWtjTddwUci1F2HR.jpg");
+        background-image: url("https://i0.wp.com/post.healthline.com/wp-content/uploads/2022/04/hand-foot-and-mouth-disease-body8.jpg?w=1155&h=1528");
         background-size: cover;
         background-position: center;
         font-family: 'Arial', sans-serif;
@@ -103,7 +139,7 @@ st.markdown("""
             gap: 10px;
         }
         .custom-box .title {
-            font-size: 20px;
+            font-size: 25px;
             font-weight: bold;
             margin-bottom: 10px;
         }
@@ -127,7 +163,7 @@ st.markdown("""
 
 # Upload or take image
 uploaded_file = st.file_uploader("Upload a skin image", type=["jpg", "jpeg", "png"])
-camera_file = st.camera_input("Or take a picture")
+camera_file = st.camera_input("Or take a picture" )
 
 # Use uploaded image or camera input
 image_data = uploaded_file if uploaded_file else camera_file
@@ -144,10 +180,13 @@ if image_data is not None:
     confidence = float(np.max(predictions)) * 100
 
     # Show result screen
-    st.image(Image.open(image_data), use_column_width=True)
+    #Image.open(image_data)
+    img_resized2 = img.resize((300, 300))
+    st.image( img_resized2  , use_column_width=False)
     st.markdown(f"""
-        <div style='background-color:#FFFFFF;padding:20px;border-radius:15px;text-align:center'>
-            <h2 style='color:#000066;'>Disease: {predicted_class.upper()}</h2>
-            <p style='font-size:18px;'>Confidence: {confidence:.2f}%</p>
+        <div style='background-color:#FFFFFF;padding:10px;border-radius:15px;text-align:center'>
+            <h2 style='color:#FF4444;'>Disease: {predicted_class.upper()}</h2>
+            <p style='font-size:25px; color: black;'>Confidence: {confidence:.2f}%</p>
+
         </div>
     """, unsafe_allow_html=True)
